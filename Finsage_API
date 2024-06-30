@@ -1,0 +1,41 @@
+const express = require('express');
+const azure = require('azure-storage');
+const cosmosClient = require('@azure/cosmos').CosmosClient;
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+// Cosmos DB configuration
+const cosmosConfig = {
+    endpoint: process.env.COSMOS_ENDPOINT,
+    key: process.env.COSMOS_KEY,
+    databaseId: "finsage-db",
+    containerId: "user-profiles"
+};
+
+const client = new cosmosClient({ endpoint: cosmosConfig.endpoint, key: cosmosConfig.key });
+const database = client.database(cosmosConfig.databaseId);
+const container = database.container(cosmosConfig.containerId);
+
+app.get('/api/user/:userId/financial-health', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { resource: userProfile } = await container.item(userId, userId).read();
+        
+        // Call to AI Financial Advisor service would go here
+        const financialHealth = calculateFinancialHealth(userProfile);
+        
+        res.json({ userId, financialHealth });
+    } catch (error) {
+        res.status(500).json({ error: "Error fetching financial health" });
+    }
+});
+
+app.listen(port, () => {
+    console.log(`FinSage API listening at http://localhost:${port}`);
+});
+
+function calculateFinancialHealth(userProfile) {
+    // Placeholder for actual financial health calculation logic
+    return Math.random() * 100;
+}
